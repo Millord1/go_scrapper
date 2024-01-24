@@ -11,18 +11,21 @@ import (
 type WebSite struct {
 	DomainName string
 	Path       []string
+	// first HTML element to find when scrapping
 	HtmlToFind string
 	RecipeUrl  ChildAttr
 }
 
 type ChildAttr struct {
+	// path to the HTML child element containing recipe url
 	HtmlPath string
-	Attr     string
+	// HTML attribute with url (usually "href")
+	Attr string
 }
 
 func (toScrap WebSite) Scrap() ([]string, error) {
 
-	// return one url for each recipe
+	// return urls: one for each recipe found
 	var recipesUrls []string
 
 	for _, url := range toScrap.Path {
