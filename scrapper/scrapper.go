@@ -8,17 +8,49 @@ import (
 	"github.com/gocolly/colly"
 )
 
-var baseAddr string = "https://www.hellofresh.fr/recipes"
+type webSite struct {
+	domainName string
+	path       []string
+}
 
-func Scrap() {
-	urls := getAddressCategories()
-	for _, url := range urls {
-		scrapCategory(&url)
+func ScrapHelloFresh() {
+	helloFresh := webSite{
+		domainName: "https://www.hellofresh.fr/recipes",
+		path: []string{
+			"recettes-les-plus-populaires",
+			"recettes-rapides",
+			"recettes-faciles",
+			"recettes-vegetariennes",
+			"recettes-italiennes",
+			"recettes-mexicaines",
+			"recettes-fusion",
+			"recettes-asiatiques",
+			"recettes-vietnamiennes",
+			"recettes-chinoises",
+			"recettes-japonaises",
+			"recettes-francaises",
+			"recettes-indiennes",
+			"recettes-espagnoles",
+			"recettes-mediterraneennes",
+			"recettes-indonesiennes",
+			"recettes-nordiques",
+		},
+	}
+
+	scrap(helloFresh)
+}
+
+func scrap(toScrap webSite) {
+	for _, url := range toScrap.path {
+		err := scrapCategory(&url, &toScrap.domainName)
+		if err != nil {
+			panic(err)
+		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func scrapCategory(categoryUrl *string) {
+func scrapCategory(categoryUrl *string, domain *string) error {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(r *colly.Request) {
@@ -27,6 +59,7 @@ func scrapCategory(categoryUrl *string) {
 
 	c.OnError(func(_ *colly.Response, err error) {
 		log.Println("Something went wrong: ", err)
+		// return err
 	})
 
 	c.OnResponse(func(r *colly.Response) {
@@ -36,6 +69,7 @@ func scrapCategory(categoryUrl *string) {
 	c.OnHTML("div.web-1nlafhw", func(e *colly.HTMLElement) {
 		attr := e.ChildAttr("div.biCnbF>a", "href")
 		if attr[0:4] == "http" {
+			// do something here
 			fmt.Println(attr)
 		}
 	})
@@ -45,31 +79,5 @@ func scrapCategory(categoryUrl *string) {
 	})
 
 	err := c.Visit("https://www.hellofresh.fr/recipes/" + *categoryUrl + "?page=30")
-	if err != nil {
-		panic(err)
-	}
-}
-
-func getAddressCategories() [17]string {
-	var urls [17]string
-
-	urls[0] = "recettes-les-plus-populaires"
-	urls[1] = "recettes-rapides"
-	urls[2] = "recettes-faciles"
-	urls[3] = "recettes-vegetariennes"
-	urls[4] = "recettes-italiennes"
-	urls[5] = "recettes-mexicaines"
-	urls[6] = "recettes-fusion"
-	urls[7] = "recettes-asiatiques"
-	urls[8] = "recettes-vietnamiennes"
-	urls[9] = "recettes-chinoises"
-	urls[10] = "recettes-japonaises"
-	urls[11] = "recettes-francaises"
-	urls[12] = "recettes-indiennes"
-	urls[13] = "recettes-espagnoles"
-	urls[14] = "recettes-mediterraneennes"
-	urls[15] = "recettes-indonesiennes"
-	urls[16] = "recettes-nordiques"
-
-	return urls
+	return err
 }
