@@ -8,49 +8,37 @@ import (
 	"github.com/gocolly/colly"
 )
 
-type webSite struct {
-	domainName string
-	path       []string
+type WebSite struct {
+	DomainName string
+	Path       []string
+	HtmlToFind string
+	RecipeUrl  ChildAttr
 }
 
-func ScrapHelloFresh() {
-	helloFresh := webSite{
-		domainName: "https://www.hellofresh.fr/recipes",
-		path: []string{
-			"recettes-les-plus-populaires",
-			"recettes-rapides",
-			"recettes-faciles",
-			"recettes-vegetariennes",
-			"recettes-italiennes",
-			"recettes-mexicaines",
-			"recettes-fusion",
-			"recettes-asiatiques",
-			"recettes-vietnamiennes",
-			"recettes-chinoises",
-			"recettes-japonaises",
-			"recettes-francaises",
-			"recettes-indiennes",
-			"recettes-espagnoles",
-			"recettes-mediterraneennes",
-			"recettes-indonesiennes",
-			"recettes-nordiques",
-		},
-	}
-
-	scrap(helloFresh)
+type ChildAttr struct {
+	HtmlPath string
+	Attr     string
 }
 
-func scrap(toScrap webSite) {
-	for _, url := range toScrap.path {
-		err := scrapCategory(&url, &toScrap.domainName)
+func (toScrap WebSite) Scrap() ([]string, error) {
+
+	// return one url for each recipe
+	var recipesUrls []string
+
+	for _, url := range toScrap.Path {
+		// loop on categories url (which is containing recipes urls)
+		recipesUrl, err := scrapCategory(&toScrap, &url)
 		if err != nil {
-			panic(err)
+			return recipesUrls, err
 		}
+		recipesUrls = append(recipesUrls, recipesUrl...)
 		time.Sleep(1 * time.Second)
 	}
+
+	return recipesUrls, nil
 }
 
-func scrapCategory(categoryUrl *string, domain *string) error {
+func scrapCategory(toScrap *WebSite, url *string) ([]string, error) {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(r *colly.Request) {
@@ -66,11 +54,12 @@ func scrapCategory(categoryUrl *string, domain *string) error {
 		fmt.Println("Page visited: ", r.Request.URL)
 	})
 
-	c.OnHTML("div.web-1nlafhw", func(e *colly.HTMLElement) {
-		attr := e.ChildAttr("div.biCnbF>a", "href")
+	var urls []string
+	c.OnHTML(toScrap.HtmlToFind, func(e *colly.HTMLElement) {
+		attr := e.ChildAttr(toScrap.RecipeUrl.HtmlPath, toScrap.RecipeUrl.Attr)
+		// get one url for each recipe
 		if attr[0:4] == "http" {
-			// do something here
-			fmt.Println(attr)
+			urls = append(urls, attr)
 		}
 	})
 
@@ -78,6 +67,6 @@ func scrapCategory(categoryUrl *string, domain *string) error {
 		fmt.Println(r.Request.URL, " scraped!")
 	})
 
-	err := c.Visit("https://www.hellofresh.fr/recipes/" + *categoryUrl + "?page=30")
-	return err
+	err := c.Visit(*&toScrap.DomainName + *url)
+	return urls, err
 }
