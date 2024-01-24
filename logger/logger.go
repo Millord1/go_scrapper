@@ -7,7 +7,7 @@ import (
 
 var defaultLogFile string = "general.log"
 
-func Log(toLog *string, file string) {
+func Log(toLog string, file string) {
 	if len(file) < 1 {
 		file = defaultLogFile
 	}
